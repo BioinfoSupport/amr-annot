@@ -71,22 +71,18 @@ def org_name(meta) {
 		return null
 }
 
-def get_key(meta,tool_name,org_name=null) {
-		def default_args_key = 'default_' + tool_name + "_args"
+// Retreive arguments to use for the given tool on the given sample
+def tool_args(tool_name,meta,org_name=null) {
 		def key = tool_name + "_args"
+		def default_args_key = 'default_' + key
 		if (params.containsKey(key)) return params[key]
     if (meta.containsKey(key)) return meta[key]
-    
     if (org_name==null) return params[default_args_key]
     def org_args = params.organisms.containsKey(org_name)?params.organisms[org_name] : [:]
     if (org_args.containsKey(key)) return org_args[key]
     return params[default_args_key]
 }
 
-// Retreive arguments to use for the given tool on the given sample
-def tool_args(tool_name, meta, org_name=null) {
-		return get_key(meta,tool_name, org_name)
-}
 
 
 
@@ -99,7 +95,7 @@ workflow ANNOTATE_ASSEMBLY {
 				fa_org_ch = fa_ch
 					.join(orgname_ch,remainder:true)
 					.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta)?:detected_org_name]})
-				
+
 				// MLST typing
 				if (params.skip_cgemlst) {
 						cgemlst_ch = Channel.empty()
