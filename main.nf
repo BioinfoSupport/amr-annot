@@ -85,46 +85,34 @@ def tool_args(tool_name,meta,org_name=null) {
 
 
 
-
-workflow ANNOTATE_ASSEMBLY {
+workflow ANNOT_ORG {
 		take:
 	    	fa_ch       // channel: [ val(meta), path(assembly_fna) ]
 	    	orgname_ch  // channel: [ val(meta), val(orgname) ]
 		main:
-				// Update fa_ch to add detected organism
+				// Update fa_ch with appropriate org_name
 				fa_org_ch = fa_ch
 					.join(orgname_ch,remainder:true)
 					.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta)?:detected_org_name]})
 
 				// MLST typing
-				if (params.skip_cgemlst) {
-						cgemlst_ch = Channel.empty()
-				} else {
-						cgemlst_ch = fa_org_ch
-							.map({meta,fa,org_name -> [meta, fa, tool_args('cgemlst',meta,org_name)]})
-							.filter({meta,fasta,args -> args!=null})
-							| CGEMLST
-				}
-				
-				if (params.skip_MLST) {
-						MLST_ch = Channel.empty()
-				} else {
-						MLST_ch = fa_org_ch
-						  .map({meta,fa,org_name -> [meta, fa, tool_args('MLST',meta,org_name)]})
-						  .filter({meta,fasta,args -> args!=null})
-							| MLST
-				}
+				cgemlst_ch = fa_org_ch
+					.filter({!params.skip_cgemlst})
+					.map({meta,fa,org_name -> [meta, fa, tool_args('cgemlst',meta,org_name)]})
+					.filter({meta,fasta,args -> args!=null})
+					| CGEMLST
+				MLST_ch = fa_org_ch
+					.filter({!params.skip_MLST})
+				  .map({meta,fa,org_name -> [meta, fa, tool_args('MLST',meta,org_name)]})
+				  .filter({meta,fasta,args -> args!=null})
+					| MLST
 
 				// PROKKA annotations
-				if (params.skip_prokka) {
-						prokka_ch = Channel.empty()
-				} else {
-						prokka_ch = fa_org_ch
-						  .map({meta,fa,org_name -> [meta, fa, tool_args('prokka',meta,org_name)]})
-						  .filter({meta,fasta,args -> args!=null})
-							| PROKKA_RUN
-				}
-
+				prokka_ch = fa_org_ch
+					.filter({!params.skip_prokka})
+				  .map({meta,fa,org_name -> [meta, fa, tool_args('prokka',meta,org_name)]})
+				  .filter({meta,fasta,args -> args!=null})
+					| PROKKA_RUN
 		emit:
 				cgemlst = cgemlst_ch
 				MLST = MLST_ch
@@ -205,7 +193,7 @@ workflow {
       // ---------------------------------------------------------------------
       // Organism specific tools
       // ---------------------------------------------------------------------
-			ann_ch = ANNOTATE_ASSEMBLY(ss.asm_ch,orgfinder_ch.org_name)
+			ann_ch = ANNOT_ORG(ss.asm_ch,orgfinder_ch.org_name)
 
 	publish:
 			// Input assembly
