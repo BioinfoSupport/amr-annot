@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/BioinfoSupport/nf-amr/refs/heads/master/assets/schema_samplesheet.json",
+  "title": "amr-annot pipeline - params.samplesheet schema",
+  "description": "Schema for the file provided with params.sample_sheet",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["assembly_id","assembly_fasta"],
+    "properties": {
+      "assembly_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_]+(/[a-zA-Z0-9_]+)*$",
+        "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters eventually separated by /",
+        "meta": "assembly_id"
+      },
+      "assembly_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "pattern": "^(.+)\\.(fasta|fa|fna)(\\.gz)?$",
+        "errorMessage": "Wrong path provided (must end with .fasta, .fa or .fna)",
+        "meta": "assembly_fasta"
+      },
+      "assembly_meta": {
+        "type": "string",
+        "format": "file-path",
+        "pattern": "^\\S+\\.(json)$",
+        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .json)",
+        "meta": "assembly_meta"
+      },
+      "org_name": {
+        "type": "string",
+        "errorMessage": "Bad org_name specified",
+        "meta": "org_name"
+      }
+    }
+  }
+}

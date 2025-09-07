@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+	"$defs": { 
+	    "genomic_params": { 
+	      "title": "Input Assembly Sequence Parameters",
+	      "type": "object",
+	      "properties": {
+	        "samplesheet": { 
+	          "type": "string",
+	          "format": "file-path",
+	          "pattern": "^\\S+\\.(csv)$",
+	          "description": "Path to a CSV file containing the sample sheet."
+	        },
+	        "assembly_fasta": { 
+	          "type": "string",
+	          "format": "file-path-pattern",
+	          "pattern": "^\\S+\\.(fasta|fa)(\\.gz)?$",
+	          "description": "Path to FASTA of the genomes to annotate."
+	        },
+	        "org_name": {
+	          "type": "string",
+	          "description": "Force organism name for all assemblies."
+	        }
+	      },
+	      
+	     "oneOf": [
+			  	{"required": ["samplesheet"], "not":{"required":["assembly_fasta"]}},
+			  	{"required": ["assembly_fasta"], "not":{"required":["samplesheet"]}}
+			  ]
+	    },
+
+	    "read_annot_tools": { 
+	      "title": "Control reads annotation tools",
+	      "type": "object",
+	      "properties": {
+	        "skip_plasmidfinder_longread": { 
+	          "type": "boolean",
+	          "description": "Should PLASMIDFINDER be skipped on the long reads",
+	          "default": false
+	        },
+	        "skip_resfinder_longread": { 
+	          "type": "boolean",
+	          "description": "Should RESFINDER be skipped on the long reads",
+	          "default": false
+	        },
+	        "skip_plasmidfinder_shortread": { 
+	          "type": "boolean",
+	          "description": "Should PLASMIDFINDER be skipped on the short reads",
+	          "default": false
+	        },
+	        "skip_resfinder_shortread": { 
+	          "type": "boolean",
+	          "description": "Should RESFINDER be skipped on the short reads",
+	          "default": false
+	        }
+	      }
+	    },
+	    
+	    "asm_annot_tools": { 
+	      "title": "Control assembly annotation tools",
+	      "type": "object",
+	      "properties": {
+	        "skip_prokka": { 
+	          "type": "boolean",
+	          "description": "Should PROKKA be skipped",
+	          "default": true
+	        },
+	        "skip_resfinder": { 
+	          "type": "boolean",
+	          "description": "Should RESFINDER be skipped",
+	          "default": false
+	        },
+	        "skip_amrfinderplus": { 
+	          "type": "boolean",
+	          "description": "Should AMRFINDERPLUS be skipped",
+	          "default": false
+	        },
+	        "skip_plasmidfinder": { 
+	          "type": "boolean",
+	          "description": "Should PLASMIDFINDER be skipped",
+	          "default": false
+	        },
+	        "skip_mobtyper": { 
+	          "type": "boolean",
+	          "description": "Should MOBTYPER be skipped",
+	          "default": false
+	        },
+	        "skip_speciator": { 
+	          "type": "boolean",
+	          "description": "Should SPECIATOR be skipped (only available on HPC)",
+	          "default": true
+	        }
+	      }
+	    }
+	    
+	  },
+	  "allOf": [
+	    { "$ref": "#/$defs/genomic_params" },
+	    { "$ref": "#/$defs/asm_annot_tools" },
+	    { "$ref": "#/$defs/read_annot_tools" }
+	  ]
+}
