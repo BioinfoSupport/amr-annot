@@ -76,27 +76,27 @@
 	          "description": "Should PROKKA be skipped",
 	          "default": true
 	        },
-	        "skip_resfinder": { 
+	        "skip_resfinder": {
 	          "type": "boolean",
 	          "description": "Should RESFINDER be skipped",
 	          "default": false
 	        },
-	        "skip_amrfinderplus": { 
+	        "skip_amrfinderplus": {
 	          "type": "boolean",
 	          "description": "Should AMRFINDERPLUS be skipped",
 	          "default": false
 	        },
-	        "skip_plasmidfinder": { 
+	        "skip_plasmidfinder": {
 	          "type": "boolean",
 	          "description": "Should PLASMIDFINDER be skipped",
 	          "default": false
 	        },
-	        "skip_mobtyper": { 
+	        "skip_mobtyper": {
 	          "type": "boolean",
 	          "description": "Should MOBTYPER be skipped",
 	          "default": false
 	        },
-	        "skip_speciator": { 
+	        "skip_speciator": {
 	          "type": "boolean",
 	          "description": "Should SPECIATOR be skipped (only available on HPC)",
 	          "default": true

@@ -2,41 +2,26 @@
 
 nextflow.preview.output = true
 
-include { GZIP_DECOMPRESS as GZIP_DECOMPRESS_FASTA  } from './modules/gzip'
-
-include { RESFINDER                             } from './modules/cgetools/resfinder'
-include { RESFINDER     as RESFINDER_LONGREAD   } from './modules/cgetools/resfinder'
-include { RESFINDER     as RESFINDER_SHORTREAD  } from './modules/cgetools/resfinder'
-
+include { GZIP_DECOMPRESS as GZIP_DECOMPRESS_FASTA } from './modules/gzip'
+include { RESFINDER                                } from './modules/cgetools/resfinder'
+include { RESFINDER     as RESFINDER_LONGREAD      } from './modules/cgetools/resfinder'
+include { RESFINDER     as RESFINDER_SHORTREAD     } from './modules/cgetools/resfinder'
 include { PLASMIDFINDER                            } from './modules/cgetools/plasmidfinder'
 include { PLASMIDFINDER as PLASMIDFINDER_LONGREAD  } from './modules/cgetools/plasmidfinder'
 include { PLASMIDFINDER as PLASMIDFINDER_SHORTREAD } from './modules/cgetools/plasmidfinder'
-
-include { ORGFINDER_DETECT    } from './modules/orgfinder/detect'
-include { SPECIATOR           } from './modules/speciator'
-
-include { AMRFINDERPLUS_UPDATE } from './modules/amrfinderplus/update'
-include { AMRFINDERPLUS_RUN    } from './modules/amrfinderplus/run'
-include { PROKKA_RUN           } from './modules/tseemann/prokka'
-include { MLST                 } from './modules/tseemann/mlst'
-
-include { MLST as CGEMLST   } from './modules/cgetools/mlst'
-include { MOBTYPER_RUN      } from './modules/mobsuite/mobtyper'
-include { SAMTOOLS_FAIDX    } from './modules/samtools/faidx'
-
-include { TO_JSON           } from './modules/tojson'
+include { ORGFINDER_DETECT                         } from './modules/orgfinder/detect'
+include { SPECIATOR                                } from './modules/speciator'
+include { AMRFINDERPLUS_UPDATE                     } from './modules/amrfinderplus/update'
+include { AMRFINDERPLUS_RUN                        } from './modules/amrfinderplus/run'
+include { PROKKA_RUN                               } from './modules/tseemann/prokka'
+include { MLST                                     } from './modules/tseemann/mlst'
+include { MLST as CGEMLST                          } from './modules/cgetools/mlst'
+include { MOBTYPER_RUN                             } from './modules/mobsuite/mobtyper'
+include { SAMTOOLS_FAIDX                           } from './modules/samtools/faidx'
+include { TO_JSON                                  } from './modules/tojson'
 
 //include { MULTIREPORT       } from './subworkflows/multireport'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
-
-
-
-params.mobtyper_default_args = ''
-params.amrfinderplus_default_args = ''
-params.plasmidfinder_default_args = ''
-params.cgemlst_default_args = null // do not run by default
-params.MLST_default_args = ''      // autodetect species by default
-params.prokka_default_args = '--kingdom Bacteria'
 
 
 
@@ -81,14 +66,13 @@ def get_samplesheet() {
 
 // Get name of the organism to use for given sample
 def org_name(meta) {
-		def org_key = 'org_name'
-		if (params.containsKey(org_key)) return params[org_key]
-    if (meta.containsKey(org_key)) return meta[org_key]
+		if (params.org_name!=null) return params.org_name
+    if (meta.containsKey('org_name')) return meta['org_name']
 		return null
 }
 
 def get_key(meta,tool_name,org_name=null) {
-		def default_args_key = tool_name + "_default_args"
+		def default_args_key = 'default_' + tool_name + "_args"
 		def key = tool_name + "_args"
 		if (params.containsKey(key)) return params[key]
     if (meta.containsKey(key)) return meta[key]
@@ -108,18 +92,12 @@ def tool_args(tool_name, meta, org_name=null) {
 
 workflow ANNOTATE_ASSEMBLY {
 		take:
-	    	fa_ch    // channel: [ val(meta), path(assembly_fna) ]
+	    	fa_ch       // channel: [ val(meta), path(assembly_fna) ]
+	    	orgname_ch  // channel: [ val(meta), val(orgname) ]
 		main:
-	
-	      // ----------------------------------------------------
-	      // Tools specific to an organism
-	      // ----------------------------------------------------
-				//orgfinder_ch = ORG_DETECT(fa_ch.filter({meta,fa -> org_name(meta)==null}),ORG_DB.out)
-				orgfinder_ch = ORGFINDER_DETECT(fa_ch)
-				
 				// Update fa_ch to add detected organism
 				fa_org_ch = fa_ch
-					.join(orgfinder_ch.org_name,remainder:true)
+					.join(orgname_ch,remainder:true)
 					.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta)?:detected_org_name]})
 				
 				// MLST typing
@@ -151,29 +129,12 @@ workflow ANNOTATE_ASSEMBLY {
 							| PROKKA_RUN
 				}
 
-				runinfo_ch = fa_org_ch
-					.join(orgfinder_ch.org_name,remainder:true)
-					.join(orgfinder_ch.ani,remainder:true)
-					.join(orgfinder_ch.org_acc,remainder:true)
-					.map({meta,fa,org_name,orgfinder_org_name,orgfinder_ani,orgfinder_org_acc -> [
-						meta, 
-						[runinfo: [
-							meta: meta, 
-							org_name: org_name,
-							orgfinder: [org_name: orgfinder_org_name, ani: orgfinder_ani, org_acc: orgfinder_org_acc]
-						]]]})
-				runinfo_ch = TO_JSON(runinfo_ch)
-
 		emit:
-				runinfo = runinfo_ch
-				orgfinder = orgfinder_ch.orgfinder
 				cgemlst = cgemlst_ch
 				MLST = MLST_ch
 				prokka = prokka_ch
 }
 	
-
-
 
 
 
@@ -216,9 +177,6 @@ workflow {
 			// Plasmid typing
 			plasmidfinder_ch = ss.asm_ch.filter({!params.skip_plasmidfinder}) | PLASMIDFINDER
 			
-			// Speciator
-			speciator_ch = ss.asm_ch.filter({!params.skip_speciator}) | SPECIATOR
-			
 			// NCBI AMRfinder+
 			if (params.skip_amrfinderplus) {
 					amrfinderplus_ch = Channel.empty()
@@ -238,13 +196,24 @@ workflow {
 				.map({meta,fasta -> [meta,fasta,tool_args('mobtyper',meta)]})
 				.filter({meta,fasta,args -> args!=null})
         | MOBTYPER_RUN
+
+
+    	// Run orgfinder to auto detect organism
+      orgfinder_ch = ss.asm_ch.filter({!params.skip_orgfinder}) | ORGFINDER_DETECT
+			//orgfinder_ch = ORGFINDER_DETECT(ss.asm_ch.filter({meta,fa -> org_name(meta)==null}),ORG_DB.out)
 			
-			ann_ch = ANNOTATE_ASSEMBLY(ss.asm_ch)
+			// Speciator
+			speciator_ch = ss.asm_ch.filter({!params.skip_speciator}) | SPECIATOR
+
+			
+      // ---------------------------------------------------------------------
+      // Organism specific tools
+      // ---------------------------------------------------------------------
+			ann_ch = ANNOTATE_ASSEMBLY(ss.asm_ch,orgfinder_ch.org_name)
 
 	publish:
 			// Input assembly
-	    runinfo          = ann_ch.runinfo
-	    orgfinder        = ann_ch.orgfinder
+	    orgfinder        = orgfinder_ch.orgfinder
       amrfinderplus    = amrfinderplus_ch
     	resfinder        = resfinder_ch
     	mobtyper         = mobtyper_ch
@@ -278,11 +247,6 @@ output {
 
 	fai {
 		path { x -> x[1] >> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_id}/assembly.fasta.fai" }
-		mode 'copy'
-	}
-
-	runinfo {
-		path { x -> x[1] >> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_id}/anninfo.json" }
 		mode 'copy'
 	}
 
