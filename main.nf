@@ -79,16 +79,6 @@ def get_samplesheet() {
 }
 
 
-
-
-
-// Return a boolean of whether the tool should be skip or not
-def skip_tool(tool_name) {
-	def key = 'skip_' + tool_name
-	if (params.containsKey(key)) return params[key]
-	return false
-}
-
 // Get name of the organism to use for given sample
 def org_name(meta) {
 		def org_key = 'org_name'
@@ -133,7 +123,7 @@ workflow ANNOTATE_ASSEMBLY {
 					.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta)?:detected_org_name]})
 				
 				// MLST typing
-				if (skip_tool('cgemlst')) {
+				if (params.skip_cgemlst) {
 						cgemlst_ch = Channel.empty()
 				} else {
 						cgemlst_ch = fa_org_ch
@@ -142,7 +132,7 @@ workflow ANNOTATE_ASSEMBLY {
 							| CGEMLST
 				}
 				
-				if (skip_tool('MLST')) {
+				if (params.skip_MLST) {
 						MLST_ch = Channel.empty()
 				} else {
 						MLST_ch = fa_org_ch
@@ -265,7 +255,6 @@ workflow {
 			speciator        = speciator_ch
 			fai              = fai_ch
 			fasta            = ss.asm_ch
-			
 
 			// Long-reads
 			long_resfinder      = RESFINDER_LONGREAD.out

@@ -53,7 +53,17 @@
 	          "type": "boolean",
 	          "description": "Should RESFINDER be skipped on the short reads",
 	          "default": false
-	        }
+	        },
+	        "skip_cgemlst": { 
+	          "type": "boolean",
+	          "description": "Should MLST (from CGE) be skipped",
+	          "default": false
+	        },
+	        "skip_MLST": { 
+	          "type": "boolean",
+	          "description": "Should MLST (from TSEEMANN) be skipped",
+	          "default": false
+	        }	        
 	      }
 	    },
 	    
