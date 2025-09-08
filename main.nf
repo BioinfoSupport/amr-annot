@@ -18,6 +18,7 @@ include { MLST                                     } from './modules/tseemann/ml
 include { MLST as CGEMLST                          } from './modules/cgetools/mlst'
 include { MOBTYPER_RUN                             } from './modules/mobsuite/mobtyper'
 include { SAMTOOLS_FAIDX                           } from './modules/samtools/faidx'
+include { SAMTOOLS_FASTQ                           } from './modules/samtools/fastq'
 include { TO_JSON                                  } from './modules/tojson'
 
 //include { MULTIREPORT       } from './subworkflows/multireport'
@@ -132,16 +133,24 @@ workflow {
 			// Prepare SampleSheet
 			// -------------------
 			ss = get_samplesheet()
-			
+
+			// ------------------------------------------------------------------			
+			// Convert input files formats
 			// ------------------------------------------------------------------
-			// Uncompress .gz files when needed
-			// ------------------------------------------------------------------
+			// Uncompress .fasta.gz files when needed
 			ss.asm_ch = ss.asm_ch.branch({meta,f -> 
 				gz: f.name =~ /\.gz$/
 				fa: true
 			})
 			ss.asm_ch = ss.asm_ch.fa.mix(GZIP_DECOMPRESS_FASTA(ss.asm_ch.gz))
 
+			// Convert BAM to FASTQ.GZ when long_reads are given in BAM format
+			ss.lr_ch = ss.lr_ch.branch({meta,f -> 
+				bam: f.name =~ /\.(bam|cram)$/
+				fq: true
+			})
+			ss.lr_ch = ss.lr_ch.fq.mix(SAMTOOLS_FASTQ(ss.lr_ch.bam))
+			
 			// -------------------
 			// Reads processing
 			// -------------------

@@ -76,6 +76,11 @@
 	          "description": "Should PROKKA be skipped",
 	          "default": true
 	        },
+	        "default_prokka_args": { 
+	          "type": "string",
+	          "description": "Default arguments to use for PROKKA"
+	        },
+	        
 	        "skip_resfinder": {
 	          "type": "boolean",
 	          "description": "Should RESFINDER be skipped",

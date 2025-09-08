@@ -8,10 +8,16 @@
     "type": "object",
     "required": ["assembly_id","assembly_fasta"],
     "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters and _",
+        "meta": "assembly_id"
+      },    	
       "assembly_id": {
         "type": "string",
-        "pattern": "^[a-zA-Z0-9_]+(/[a-zA-Z0-9_]+)*$",
-        "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters eventually separated by /",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters and _",
         "meta": "assembly_id"
       },
       "assembly_fasta": {

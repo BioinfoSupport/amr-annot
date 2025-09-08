@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+work/
+.nextflow*
+.DS_Store
+*.html
+data/
+results_amr-annot/
