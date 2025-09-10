@@ -16,14 +16,14 @@ process MULTITABLE {
         """
 		#!/usr/bin/env Rscript
 		source("lib_typing.R")
-		db <- db_load("db")
+		db <- db_load("db/samples")
 		tbl <- list(
 			assemblies = summarise_assembly(db),
 			contigs = summarise_contigs(db),
 			resistances = summarise_resistances(db),
 			plasmidfinder_hits = summarise_plasmidfinder_hits(db)
 		)
-		tbl\$contigs <- left_join(tbl\$contigs,select(tbl\$assemblies,assembly_id,species_name,mlst_type),by='assembly_id')
+		tbl\$contigs <- left_join(tbl\$contigs,select(tbl\$assemblies,sample_id,assembly_name,species_name,mlst_type),by=c('sample_id','assembly_name'))
 		openxlsx::write.xlsx(tbl,file="multitable.xlsx")
         """
 }

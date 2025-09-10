@@ -257,38 +257,38 @@ summarise_resistances <- function(db) {
 }
 
 summarise_plasmidfinder_hits <- function(db) {
-	#db <- db_load("results/samples")
-	select(db,assembly_id,plasmidfinder) |> 
+	#db <- db_load("results_amr-annot/output/samples") 
+	select(db$assemblies,sample_id,assembly_name,plasmidfinder) |> 
 		unnest(plasmidfinder) |>
-		select(assembly_id,contig_id,plasmid_type,coverage,identity,position=positions_in_contig) |>
-		left_join(summarise_contigs(db) |> select(assembly_id,contig_id,contig_length,contig_is_plasmid=is_plasmid)) |>
-		arrange(assembly_id,contig_id,desc(coverage),desc(identity)) |>
+		select(sample_id,assembly_name,contig_id,plasmid_type,coverage,identity,position=positions_in_contig) |>
+		left_join(summarise_contigs(db) |> select(sample_id,assembly_name,contig_id,contig_length,contig_is_plasmid=is_plasmid)) |>
+		arrange(sample_id,assembly_name,contig_id,desc(coverage),desc(identity)) |>
 		ungroup()
 }
 
 summarise_contigs <- function(db) {
 	#db <- db_load("results")
-	contigs <- db |> 
-		select(assembly_id,contigs) |> 
+	contigs <- db$assemblies |> 
+		select(sample_id,assembly_name,contigs) |> 
 		unnest(contigs)
 	res <- summarise_resistances(db) |>
-		group_by(assembly_id,contig_id) |>
+		group_by(sample_id,assembly_name,contig_id) |>
 		summarise(resistance_names = list(str_unique(resistance_name)))
-	plf <- db |> 
-		select(assembly_id,plasmidfinder) |> 
+	plf <- db$assemblies |> 
+		select(sample_id,assembly_name,plasmidfinder) |> 
 		unnest(plasmidfinder) |>
-		group_by(assembly_id,contig_id) |>
+		group_by(sample_id,assembly_name,contig_id) |>
 		summarise(plasmid_types=list(str_unique(plasmid_type)))
-	mob <- db |> 
-		select(assembly_id,mobtyper) |> 
+	mob <- db$assemblies |> 
+		select(sample_id,assembly_name,mobtyper) |> 
 		unnest(mobtyper) |>
 		mutate(relaxase_types = str_split(relaxase_types,",") |> map(str_unique)) |>
-		select(assembly_id,contig_id,relaxase_types)
+		select(sample_id,assembly_name,contig_id,relaxase_types)
 	contigs |>
-		select(assembly_id,contig_id,contig_length,GC,topology=tag_topology) |>
-		left_join(res,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
-		left_join(plf,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
-		left_join(mob,by=c("assembly_id","contig_id"),relationship = "one-to-one")  |>
+		select(sample_id,assembly_name,contig_id,contig_length,GC,topology=tag_topology) |>
+		left_join(res,by=c("sample_id","assembly_name","contig_id"),relationship = "one-to-one") |>
+		left_join(plf,by=c("sample_id","assembly_name","contig_id"),relationship = "one-to-one") |>
+		left_join(mob,by=c("sample_id","assembly_name","contig_id"),relationship = "one-to-one")  |>
 		mutate(is_plasmid = (contig_length<=500000) & lengths(plasmid_types)>0)
 }
 
