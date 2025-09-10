@@ -20,8 +20,7 @@ include { MOBTYPER_RUN                             } from './modules/mobsuite/mo
 include { SAMTOOLS_FAIDX                           } from './modules/samtools/faidx'
 include { SAMTOOLS_FASTQ                           } from './modules/samtools/fastq'
 include { TO_JSON                                  } from './modules/tojson'
-
-//include { MULTIREPORT       } from './subworkflows/multireport'
+include { MULTIREPORT       } from './subworkflows/multireport'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
@@ -89,11 +88,11 @@ def tool_args(tool_name,meta,org_name=null) {
 workflow ANNOT_ORG {
 	take:
 		fa_ch       // channel: [ val(meta), path(assembly_fna) ]
-		orgname_ch  // channel: [ val(meta), val(orgname) ]
+		detected_orgname_ch  // channel: [ val(meta), val(orgname) ]
 	main:
 		// Update fa_ch with appropriate org_name
 		fa_org_ch = fa_ch
-			.join(orgname_ch,remainder:true)
+			.join(detected_orgname_ch,remainder:true)
 			.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta)?:detected_org_name]})
 
 		// MLST typing
@@ -114,13 +113,13 @@ workflow ANNOT_ORG {
 			.map({meta,fa,org_name -> [meta, fa, tool_args('prokka',meta,org_name)]})
 			.filter({meta,fasta,args -> args!=null})
 			| PROKKA_RUN
+
 	emit:
 		cgemlst = cgemlst_ch
 		MLST = MLST_ch
 		prokka = prokka_ch
+		org_name = fa_org_ch.map({meta,fa,org_name -> [meta,org_name]})
 }
-	
-
 
 
 workflow {
@@ -193,7 +192,6 @@ workflow {
 
     	// Run orgfinder to auto detect organism
 		orgfinder_ch = ss.asm_ch.filter({!params.skip_orgfinder}) | ORGFINDER_DETECT
-		//orgfinder_ch = ORGFINDER_DETECT(ss.asm_ch.filter({meta,fa -> org_name(meta)==null}),ORG_DB.out)
 			
 		// Speciator
 		speciator_ch = ss.asm_ch.filter({!params.skip_speciator}) | SPECIATOR
@@ -204,122 +202,39 @@ workflow {
 		// ---------------------------------------------------------------------
 		ann_ch = ANNOT_ORG(ss.asm_ch,orgfinder_ch.org_name)
 
+
+		// Results aggregation and reporting
+		MULTIREPORT(
+			ss.asm_ch,
+			fai_ch,
+			ann_ch.org_name,
+			orgfinder_ch.orgfinder,
+			amrfinderplus_ch,
+			resfinder_ch,
+			mobtyper_ch,
+			plasmidfinder_ch,
+			ann_ch.cgemlst,
+			ann_ch.MLST,
+			ann_ch.prokka,
+			RESFINDER_LONGREAD.out,
+			PLASMIDFINDER_LONGREAD.out,
+			RESFINDER_SHORTREAD.out,
+			PLASMIDFINDER_SHORTREAD.out
+		)
+
 	publish:
 		// Input assembly
-	    orgfinder        = orgfinder_ch.orgfinder
-      	amrfinderplus    = amrfinderplus_ch
-    	resfinder        = resfinder_ch
-    	mobtyper         = mobtyper_ch
-    	plasmidfinder    = plasmidfinder_ch
-    	cgemlst          = ann_ch.cgemlst
-    	MLST             = ann_ch.MLST
-    	prokka           = ann_ch.prokka
-		speciator        = speciator_ch
-		fai              = fai_ch
-		fasta            = ss.asm_ch
-
-		// Long-reads
-		long_resfinder      = RESFINDER_LONGREAD.out
-		long_plasmidfinder  = PLASMIDFINDER_LONGREAD.out
-
-		// Short-reads
-		short_resfinder     = RESFINDER_SHORTREAD.out
-		short_plasmidfinder = PLASMIDFINDER_SHORTREAD.out
-		
-		// Summary reports
-    	//html_report      = MULTIREPORT.out.html
-    	//xlsx_report      = MULTIREPORT.out.xlsx
+	    multireport_folder = MULTIREPORT.out.folder
+    	html_report        = MULTIREPORT.out.html
+    	xlsx_report        = MULTIREPORT.out.xlsx
 }
 
 
-output {
-	fasta {
-		path { x -> x[1] >> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/assembly.fasta" }
+output {	
+	multireport_folder {
+		path { x -> '.' }
 		mode 'copy'
 	}
-
-	fai {
-		path { x -> x[1] >> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/assembly.fasta.fai" }
-		mode 'copy'
-	}
-
-	orgfinder {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	amrfinderplus {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-	
-	resfinder {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-	
-	mobtyper {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	plasmidfinder {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	cgemlst {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	MLST {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	prokka {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-
-	speciator {
-		path { x -> "samples/${x[0].sample_id}/assemblies/${x[0].assembly_name}/" }
-		mode 'copy'
-	}
-	
-
-	// -------------------
-	// Long-reads
-	// -------------------
-	long_resfinder {
-		path { x -> "samples/${x[0].sample_id}/long_reads/" }
-		mode 'copy'
-	}
-	long_plasmidfinder {
-		path { x -> "samples/${x[0].sample_id}/long_reads/" }
-		mode 'copy'
-	}
-	
-	
-	// -------------------
-	// Short-reads
-	// -------------------
-	short_resfinder {
-		path { x -> "samples/${x[0].sample_id}/short_reads/" }
-		mode 'copy'
-	}
-	short_plasmidfinder {
-		path { x -> "samples/${x[0].sample_id}/short_reads/" }
-		mode 'copy'
-	}
-	
-	
-	// -------------------
-	// Summary reports
-	// -------------------	
-	
-	/*
 	html_report {
 		path { x -> x[1] >> "${x[0]}" }
 		mode 'copy'
@@ -328,7 +243,6 @@ output {
 		path { x -> x[1] >> "${x[0]}" }
 		mode 'copy'
 	}
-	*/
 }
 
 
