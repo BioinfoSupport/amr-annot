@@ -6,19 +6,19 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["assembly_id","assembly_fasta"],
+    "required": ["sample_id","assembly_name","assembly_fasta"],
     "properties": {
       "sample_id": {
         "type": "string",
         "pattern": "^[a-zA-Z0-9_]+$",
-        "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters and _",
-        "meta": "assembly_id"
+        "errorMessage": "Sample identifier must be provided and can only contain alpha-numeric characters and _",
+        "meta": "sample_id"
       },    	
-      "assembly_id": {
+      "assembly_name": {
         "type": "string",
         "pattern": "^[a-zA-Z0-9_]+$",
         "errorMessage": "Assembly identifier must be provided and can only contain alpha-numeric characters and _",
-        "meta": "assembly_id"
+        "meta": "assembly_name"
       },
       "assembly_fasta": {
         "type": "string",
