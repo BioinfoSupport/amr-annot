@@ -78,7 +78,8 @@
 	        },
 	        "default_prokka_args": { 
 	          "type": "string",
-	          "description": "Default arguments to use for PROKKA"
+	          "description": "Default arguments to use for PROKKA",
+			  "default": "--kingdom Bacteria"
 	        },
 	        
 	        "skip_resfinder": {

@@ -232,7 +232,7 @@ workflow {
 
 output {	
 	multireport_folder {
-		path { x -> '.' }
+		path { x -> x[1] >> '.' }
 		mode 'copy'
 	}
 	html_report {
