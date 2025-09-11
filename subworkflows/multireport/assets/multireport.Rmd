@@ -6,7 +6,7 @@ output:
     flexdashboard::flex_dashboard:
         orientation: rows
 params:
-    indir: "../../../results_run64_sup_v5.0.0/samples"
+    indir: "results_amr-annot/samples/"
 ---
 
 ```{r setup}
@@ -142,7 +142,7 @@ plotly::config(displayModeBar=FALSE)
 
 ### amrfinder+
 ```{r}
-amrfinderplus <- db |>
+amrfinderplus <- db$assemblies |>
 	select(assembly_id,amrfinderplus) |>
 	unnest(amrfinderplus)
 bind_rows(
@@ -195,7 +195,7 @@ plotly::config(displayModeBar=FALSE)
 Row
 -------------------------
 ```{r}
-amrfinderplus <- db |>
+amrfinderplus <- db$assemblies |>
 	select(assembly_id,amrfinderplus) |>
 	unnest(amrfinderplus)
 bind_rows(
@@ -251,7 +251,7 @@ Row {.tabset}
 ### assemblies
 ```{r}
 assemblies |>
-	select(species_name,mlst_type,assembly_id,num_contig,assembly_length,GC,N50,orgfinder.species_name,orgfinder.ani) |>
+	select(species_name,mlst_type,num_contig,assembly_length,GC,N50,orgfinder.species_name,orgfinder.ANI) |>
 	mutate(GC = 100*GC) |>
 	reactable(
 		pagination = FALSE,
@@ -360,6 +360,7 @@ Column
 ### Resfinder
 ```{r fig.height=6, fig.width=4}
 summarise_resistances(db) |>
+	mutate(assembly_id = str_c(sample_id,assembly_name,sep='/')) |>
 	distinct(assembly_id,resistance_name) |>
 	mutate(resistance_name = fct_reorder2_hclust(resistance_name,assembly_id,rep(1,n()))) |>
 	ggplot(aes(y=resistance_name)) +
@@ -428,7 +429,7 @@ Row
 ### Assemblies
 ```{r}
 assemblies |>
-	select(mlst_type,assembly_id,num_contig,assembly_length,N50,GC,species_name,orgfinder.species_name,orgfinder.ani) |>
+	select(mlst_type,assembly_id,num_contig,assembly_length,N50,GC,species_name,orgfinder.species_name,orgfinder.ANI) |>
 	mutate(GC=100*GC) |>
 	group_by(species_name) |>
 	gt::gt(row_group_as_column=TRUE) |>
@@ -436,8 +437,8 @@ assemblies |>
 	gt::tab_style(list(gt::cell_text(weight="bold"),gt::cell_fill()),locations=gt::cells_column_labels()) |>
 	gt::tab_style(list(gt::cell_text(weight="bold"),gt::cell_fill()),locations=gt::cells_stubhead()) |>		
 	gt::fmt_number(c(assembly_length,N50),decimals = 0,pattern="{x} bp") |>
-	gt::fmt_number(c(orgfinder.ani,GC),decimals = 1,pattern="{x}%") |>
-	gt::tab_style(list(gt::cell_fill(color = "tomato")),locations=gt::cells_body(orgfinder.ani,rows = orgfinder.ani<=97)) |>
+	gt::fmt_number(c(orgfinder.ANI,GC),decimals = 1,pattern="{x}%") |>
+	gt::tab_style(list(gt::cell_fill(color = "tomato")),locations=gt::cells_body(orgfinder.ANI,rows = orgfinder.ANI<=97)) |>
 	gt::tab_style(list(gt::cell_fill(color = "tomato")),locations=gt::cells_body(orgfinder.species_name,rows = orgfinder.species_name!=species_name))
 ```
 
@@ -454,7 +455,7 @@ plotly::plot_ly(
 	y = ~assembly_length,
 	text = ~str_glue('
 		{assembly_id}
-		{sprintf("%s (%.1f%%)",orgfinder.species_name,orgfinder.ani)}
+		{sprintf("%s (%.1f%%)",orgfinder.species_name,orgfinder.ANI)}
 		ST: {mlst_type}
 		GC: {sprintf("%.1f%%",100*GC)}
 	')
@@ -467,14 +468,14 @@ plotly::config(displayModeBar=FALSE)
 ```{r}
 contigs |>
 	left_join(select(assemblies,assembly_id,species_name,genus_name),by="assembly_id") |>
-  mutate(assembly_id = fct_reorder(assembly_id,contig_length,sum)) |>
-  mutate(contig_id = fct_reorder(contig_id,contig_length,sum)) |>
-  ggplot() + 
-      facet_grid(genus_name~.,space = "free_y",scales="free_y") +
-      geom_col(aes(x=contig_length,y=assembly_id,group=contig_id,fill=is_plasmid),color="black",position="stack") + 
-      scale_x_continuous(position="top",labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
-      theme_bw() + theme(legend.position="top") +
-			theme(strip.text.y = element_text(angle=0))
+	mutate(assembly_id = fct_reorder(assembly_id,contig_length,sum)) |>
+	mutate(contig_id = fct_reorder(contig_id,contig_length,sum)) |>
+	ggplot() + 
+		facet_grid(genus_name~.,space = "free_y",scales="free_y") +
+		geom_col(aes(x=contig_length,y=assembly_id,group=contig_id,fill=is_plasmid),color="black",position="stack") + 
+		scale_x_continuous(position="top",labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+		theme_bw() + theme(legend.position="top") +
+		theme(strip.text.y = element_text(angle=0))
 ```
 
 

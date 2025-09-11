@@ -69,13 +69,13 @@ workflow MULTIREPORT {
 			.collect({[it]})
 			.map({["aggregated_folder",it]})
 		)
-/*
+
 		RMD_RENDER(
 			ORGANIZE_FILES.out.map({m,x -> ["multireport.html",x,"indir='${x}'"]}),
 			file("${moduleDir}/assets/multireport.Rmd"),
 			file("${moduleDir}/assets/lib_typing.R")
 		)
-*/
+
 		MULTITABLE(
 			ORGANIZE_FILES.out.map({m,x -> ["multitable.xlsx",x]}),
 			file("${moduleDir}/assets/lib_typing.R")
