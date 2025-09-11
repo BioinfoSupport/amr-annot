@@ -16,7 +16,7 @@ process MULTITABLE {
         """
 		#!/usr/bin/env Rscript
 		source("lib_typing.R")
-		db <- db_load("db/samples")
+		db <- db_load("db")
 		tbl <- list(
 			assemblies = summarise_assembly(db),
 			contigs = summarise_contigs(db),

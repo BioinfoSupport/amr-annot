@@ -171,8 +171,9 @@ contig_meta <- function(fasta_filename) {
 
 
 db_load <- function(amr_dir) {
-	#amr_dir <- "results_amr-annot/output/samples"
-	samples <- fs::dir_ls(amr_dir,recurse = 0) |>
+	#amr_dir <- "results_amr-annot/output"
+	samples <- fs::path(amr_dir,"samples") |>
+			fs::dir_ls(recurse = 0) |>
 			enframe(name = NULL,value = "sample_path") |>
 			mutate(sample_id = sample_path |> basename()) |>
 			mutate(resfinder_long_reads = map(fs::path(sample_path,"long_reads","resfinder","data.json"),read_resfinder_json)) |>
@@ -180,7 +181,8 @@ db_load <- function(amr_dir) {
 			mutate(plasmidfinder_long_reads = map(fs::path(sample_path,"long_reads","plasmidfinder","data.json"),read_plasmidfinder_json)) |>
 			mutate(plasmidfinder_short_reads = map(fs::path(sample_path,"short_reads","plasmidfinder","data.json"),read_plasmidfinder_json))
 
-	assemblies <- fs::dir_ls(amr_dir,recurse = 3,glob = "*/assemblies/*/assembly.fasta") |>
+	assemblies <- fs::path(amr_dir,"samples") |>
+			fs::dir_ls(recurse = 3,glob = "*/assemblies/*/assembly.fasta") |>
 			fs::path_dir() |> 
 			enframe(name = NULL,value = "assembly_path") |>
 			mutate(assembly_name = basename(assembly_path)) |>
